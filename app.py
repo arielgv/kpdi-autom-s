@@ -1,11 +1,3 @@
-# app.py - Streamlit app adapted from the original Colab script
-# To run: streamlit run app.py
-# Set up secrets in .streamlit/secrets.toml:
-# jiraemail = "your_jira_email"
-# jiraapi = "your_jira_api_token"
-# Note: HARVEST_TOKEN and HARVEST_ACCOUNT_ID are hardcoded as in the original script.
-# If you want to secure them, add to secrets and reference accordingly.
-
 import streamlit as st
 import requests
 import pandas as pd
@@ -15,8 +7,6 @@ from datetime import datetime
 from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.utils import get_column_letter
 
-# Jira and Harvest credentials
-# Replace with st.secrets if set up
 JIRA_EMAIL = st.secrets["jiraemail"]
 JIRA_API = st.secrets["jiraapi"]
 auth = b64encode(f'{JIRA_EMAIL}:{JIRA_API}'.encode()).decode()
@@ -32,7 +22,7 @@ HARVEST_H = {
     'User-Agent': 'ConciliationReport'
 }
 
-# Users and Projects (same as original)
+
 JIRA_USERS = {
     'Karl Dionne' : '557058:91dd957f-3996-41de-9ecc-061691ca6316',
     'Thomas'      : '5c8911f853f3d02a237ee4c1',
@@ -148,7 +138,6 @@ OUTPUT_GROUPS = [
     },
 ]
 
-# Functions (same as original)
 def secs_to_h(s):
     h, m = int(s // 3600), int((s % 3600) // 60)
     if h == 0: return round(m / 60, 2)
@@ -167,7 +156,7 @@ def fetch_jira_issues(account_id, date_from, date_to, include=None, exclude=None
     jql = ' AND '.join(conditions)
     issues, start = [], 0
     while True:
-        r = requests.get(f'{JIRA_BASE}/rest/api/3/search', headers=JIRA_H,  # Note: changed to /search (was /search/jql, but it's /search with jql param)
+        r = requests.get(f'{JIRA_BASE}/rest/api/3/search', headers=JIRA_H,  #
                          params={'jql': jql, 'fields': 'worklog', 'maxResults': 50, 'startAt': start})
         if r.status_code != 200: break
         batch = r.json().get('issues', [])
@@ -257,7 +246,7 @@ if st.button("Generate Report"):
                 diff = round(jira_h - harvest_h, 2)
                 st.write(f'  {uname:<25} Jira: {jira_h:>6}h  Harvest: {harvest_h:>6}h  Diff: {diff:>+.2f}h')
 
-        # Build DataFrame (same as original)
+        # Build DataFrame
         rows = []
         for group in OUTPUT_GROUPS:
             gname = group['name']
@@ -267,10 +256,10 @@ if st.button("Generate Report"):
             harvest_total = 0.0
 
             rows.append({
-                'Proyecto / Usuario': gname,
+                'Project - User ': gname,
                 'Harvest (h)': '',
                 'Jira (h)': '',
-                'Diferencia (h)': '',
+                'Diff (h)': '',
             })
 
             for uname in group['users']:
@@ -281,30 +270,30 @@ if st.button("Generate Report"):
                 jira_total += j
                 harvest_total += h
                 rows.append({
-                    'Proyecto / Usuario': f'    {uname}',
+                    'Project - User ': f'    {uname}',
                     'Harvest (h)': h,
                     'Jira (h)': j,
-                    'Diferencia (h)': diff,
+                    'Diff (h)': diff,
                 })
 
             total_diff = round(jira_total - harvest_total, 2)
             rows.append({
-                'Proyecto / Usuario': '    TOTAL',
+                'Project - User ': '    TOTAL',
                 'Harvest (h)': round(harvest_total, 2),
                 'Jira (h)': round(jira_total, 2),
-                'Diferencia (h)': total_diff,
+                'Diff (h)': total_diff,
             })
-            rows.append({'Proyecto / Usuario': '', 'Harvest (h)': '', 'Jira (h)': '', 'Diferencia (h)': ''})
+            rows.append({'Project - User ': '', 'Harvest (h)': '', 'Jira (h)': '', 'Diff (h)': ''})
 
         df = pd.DataFrame(rows)
 
-        # Display DataFrame
+       
         st.dataframe(df)
 
-        # Generate Excel in memory with styles
+        #  Excel 
         excel_buffer = BytesIO()
         with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
-            df.to_excel(writer, index=False, sheet_name='Conciliacion')
+            df.to_excel(writer, index=False, sheet_name='JiraHarvest')
             ws = writer.sheets['Conciliacion']
 
             header_fill = PatternFill('solid', fgColor='1F4E79')
@@ -342,7 +331,7 @@ if st.button("Generate Report"):
         st.download_button(
             label="Download Excel Report",
             data=excel_buffer,
-            file_name=f'Conciliacion_{DATE_FROM}_to_{DATE_TO}.xlsx',
+            file_name=f'MergedJiraHarvest_{DATE_FROM}_to_{DATE_TO}.xlsx',
             mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         )
 
