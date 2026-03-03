@@ -294,7 +294,7 @@ if st.button("Generate Report"):
         excel_buffer = BytesIO()
         with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
             df.to_excel(writer, index=False, sheet_name='JiraHarvest')
-            ws = writer.sheets['Conciliacion']
+            ws = writer.sheets['JiraHarvest']
 
             header_fill = PatternFill('solid', fgColor='1F4E79')
             group_fill = PatternFill('solid', fgColor='2E75B6')
